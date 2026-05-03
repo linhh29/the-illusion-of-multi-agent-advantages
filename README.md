@@ -1,4 +1,4 @@
-# Synthetic Multi-Hop Financial Reasoning (SMFR) Dataset - Code Repository
+# Synthetic Multi-Hop Financial Reasoning (SMFR) Dataset
 
 This repository contains the code for generating and evaluating the Synthetic Multi-Hop Financial Reasoning (SMFR) benchmark dataset.
 
