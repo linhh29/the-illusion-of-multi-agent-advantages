@@ -1,0 +1,18 @@
+# Vendored from AFlow; use environment OPENAI_API_KEY when api_key is empty.
+# Do not commit real secrets — set keys here or rely on env.
+models:
+  "gpt-4o":
+    api_type: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: ""
+    temperature: 0
+  "gpt-5":
+    api_type: "openai"
+    base_url: "https://api.openai.com/v1"
+    api_key: ""
+    temperature: 1
+  "gpt-oss-120b":
+    api_type: "openai"
+    base_url: "https://api.together.xyz/v1"
+    api_key: ""
+    temperature: 0

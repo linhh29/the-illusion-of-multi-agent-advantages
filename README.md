@@ -27,11 +27,19 @@ code/
 │       ├── math_task.py               # Math task (extensible)
 │       └── coding_task.py             # Coding task (extensible)
 │
-└── evaluate/                     # Evaluation scripts
-    ├── evaluate_stock_answer_code.py  # Main evaluation script
-    ├── safe_code_executor.py          # Sandboxed code execution
-    ├── requirements_evaluation.txt    # Evaluation dependencies
-    └── README.md                      # Evaluation documentation
+├── evaluate/                     # Evaluation scripts
+│   ├── evaluate_stock_answer_code.py  # Main evaluation script
+│   ├── safe_code_executor.py          # Sandboxed code execution
+│   ├── requirements_evaluation.txt    # Evaluation dependencies
+│   └── README.md                      # Evaluation documentation
+│
+└── MAS/                          # Multi-Agent System implementations
+    ├── ADAS/                     # Automated Design of Agentic Systems
+    ├── AFlow/                    # Automated Agentic Workflow Generation
+    ├── DyLAN/                    # Dynamic LLM-Agent Network
+    ├── MaAS/                     # Multi-agent Architecture Search
+    ├── MAS-Orchestra/            # Multi-Agent Reasoning Orchestration
+    └── MAS-Zero/                 # Multi-Agent System Design with Zero Supervision
 ```
 
 ## Quick Start

@@ -1,0 +1,11 @@
+numpy==2.3.2
+tqdm==4.67.1
+pandas==2.3.2
+openai==1.101.0
+backoff==2.2.1
+scipy==1.16.1
+blobfile==3.0.0
+datasets==3.2.0 #li: HLE dataset required
+pillow==11.3.0
+python-dotenv==1.1.1
+debugpy==1.8.17
