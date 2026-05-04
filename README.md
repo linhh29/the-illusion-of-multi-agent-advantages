@@ -406,7 +406,3 @@ def create_data_source(source_type: str):
     return sources[source_type]()
 ```
 
-
-## Acknowledgments
-
-This dataset uses historical stock price data from Yahoo Finance via the yfinance library.
