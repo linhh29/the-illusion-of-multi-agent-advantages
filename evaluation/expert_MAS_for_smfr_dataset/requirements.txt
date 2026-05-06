@@ -1,0 +1,5 @@
+openai>=1.50.0
+pydantic>=2.0.0
+tqdm>=4.60.0
+# Optional: Google Gemini backend
+# google-genai>=1.0.0

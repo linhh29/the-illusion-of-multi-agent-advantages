@@ -1,0 +1,5 @@
+# Requirements for evaluate_smfr_answer_code.py
+# This file contains the minimal dependencies needed to run the evaluation script
+
+# For reading JSONL files
+jsonlines>=3.0.0

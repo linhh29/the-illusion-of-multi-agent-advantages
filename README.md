@@ -1,408 +1,319 @@
-# Synthetic Multi-Hop Financial Reasoning (SMFR) Dataset
+# The Illusion of Multi-Agent Advantages
 
-This repository contains the code for generating and evaluating the Synthetic Multi-Hop Financial Reasoning (SMFR) benchmark dataset.
+This repository contains (1) the code for generating and evaluating the **Smfrs** benchmark dataset used in our experiments, and (2) the evaluation code for all methods compared in the paper, including automatic MAS frameworks, our expert-designed MAS, and single-agent baselines (CoT & CoT-SC).
 
-## Overview
+## Contents
 
-This benchmark evaluates multi-step reasoning and computational capabilities of large language models through synthetic stock trading problems. Each problem requires:
+- Repository Structure
+- Dataset Generation & Evaluation
+  - Generate the Dataset
+  - Evaluate Model Outputs
+- Running Experiments
+  - CoT & CoT-SC (Single-Agent Baselines)
+  - Expert-Designed MAS (Smfrs)
+  - Automatic MAS Frameworks
+    - ADAS
+    - AFlow
+    - DyLAN
+    - MaAS
+    - MAS-Orchestra
+    - MAS-Zero
 
-1. Parsing historical stock price data from multiple companies
-2. Tracking investor transactions across multiple stocks
-3. Computing portfolio profit/loss for different scenarios
-4. Identifying optimal trading dates to achieve target returns
-5. Comparing results across multiple investors
+---
 
 ## Repository Structure
 
 ```
-code/
-├── src/                          # Dataset generation code
-│   ├── generate_balanced_dataset.py   # Main generation script
-│   ├── config_schema.py               # Configuration schemas
-│   ├── problem_composer.py            # Problem composition engine
-│   ├── task_base.py                   # Base classes for tasks
-│   ├── data_sources.py                # Stock data fetching
-│   └── tasks/                         # Task implementations
-│       ├── stock_task.py              # Stock trading task
-│       ├── math_task.py               # Math task (extensible)
-│       └── coding_task.py             # Coding task (extensible)
+.
+├── dataset/
+│   ├── src/                          # Dataset generation code
+│   │   ├── generate_balanced_dataset.py
+│   │   ├── config_schema.py
+│   │   ├── problem_composer.py
+│   │   ├── task_base.py
+│   │   ├── data_sources.py
+│   │   └── tasks/
+│   └── evaluate/                     # Smfrs evaluation script
+│       ├── evaluate_smfr_answer_code.py
+│       ├── safe_code_executor.py
+│       └── requirements_evaluation.txt
 │
-├── evaluate/                     # Evaluation scripts
-│   ├── evaluate_stock_answer_code.py  # Main evaluation script
-│   ├── safe_code_executor.py          # Sandboxed code execution
-│   ├── requirements_evaluation.txt    # Evaluation dependencies
-│   └── README.md                      # Evaluation documentation
-│
-└── MAS/                          # Multi-Agent System implementations
-    ├── ADAS/                     # Automated Design of Agentic Systems
-    ├── AFlow/                    # Automated Agentic Workflow Generation
-    ├── DyLAN/                    # Dynamic LLM-Agent Network
-    ├── MaAS/                     # Multi-agent Architecture Search
-    ├── MAS-Orchestra/            # Multi-Agent Reasoning Orchestration
-    └── MAS-Zero/                 # Multi-Agent System Design with Zero Supervision
+└── evaluation/
+    ├── SAS/                          # CoT & CoT-SC single-agent baselines
+    │   ├── GPQA/
+    │   ├── HLEMATH/
+    │   ├── BCP/
+    │   ├── SMFR/
+    │   └── SWE/
+    ├── expert_MAS_for_smfr_dataset/ # Expert-designed MAS for Smfrs
+    │   ├── agents.py
+    │   ├── pipeline.py
+    │   ├── run_inference.py
+    │   ├── debug_trace.py
+    │   └── prompts/
+    └── Automatic-MAS/                # Automatic MAS frameworks
+        ├── ADAS/
+        ├── AFlow/
+        ├── DyLAN/
+        ├── MaAS/
+        ├── MAS-Orchestra/
+        └── MAS-Zero/
 ```
 
-## Quick Start
+---
 
-### Installation
+## Dataset Generation & Evaluation
+
+### Generate the Dataset
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd code
+cd dataset/src
 
-# Install dependencies for generation
+# Install dependencies
 pip install yfinance python-dateutil tqdm
 
-# Install dependencies for evaluation
-pip install -r evaluate/requirements_evaluation.txt
-```
-
-### Generate Dataset
-
-```bash
-cd src
-
-# Generate dataset with 2 investors per problem
+# Generate with 2 investors per problem
 python generate_balanced_dataset.py 2
 
-# Generate dataset with 3 investors per problem
+# Generate with 3 investors per problem
 python generate_balanced_dataset.py 3
-
-# This creates: balanced_dataset_single_2.jsonl, balanced_dataset_single_3.jsonl, etc.
 ```
+
+The complexity parameter `N` controls the number of investors, companies (breadth), transactions per investor (depth), and distractors simultaneously.
 
 ### Evaluate Model Outputs
 
 ```bash
-cd evaluate
+cd dataset/evaluate
+
+pip install -r requirements_evaluation.txt
 
 # Basic evaluation
-python evaluate_stock_answer_code.py \
-    --reference ../data/balanced_dataset_single_2_fixed.jsonl \
-    --model-output your_model_outputs.jsonl
+python evaluate_smfr_answer_code.py \
+    --reference  <path_to>/balanced_dataset_single_2_fixed.jsonl \
+    --model-output  your_model_outputs.jsonl
 
 # With validation exclusion (required for n=2 and n=3)
-python evaluate_stock_answer_code.py \
-    --reference ../data/balanced_dataset_single_2_fixed.jsonl \
-    --model-output your_model_outputs.jsonl \
-    --validation ../data/balanced_dataset_single_validate_fixed.jsonl \
+python evaluate_smfr_answer_code.py \
+    --reference  <path_to>/balanced_dataset_single_2_fixed.jsonl \
+    --model-output  your_model_outputs.jsonl \
+    --validation  <path_to>/balanced_dataset_single_validate_fixed.jsonl \
     --timeout 30
 ```
 
-## Dataset Generation
-
-### Generation Pipeline
-
-The dataset generation follows a modular pipeline:
-
-1. **Configuration** (`config_schema.py`): Define problem parameters
-   - Number of investors
-   - Question type (reverse_target_sell, reverse_target_buy)
-   - Aggregation (earliest, latest)
-   - Target profit percentage
-   - Price type (Open, Close)
-   - Breadth (number of companies) and depth (number of transactions)
-
-2. **Data Fetching** (`data_sources.py`): Retrieve historical stock prices
-   - Uses Yahoo Finance API (yfinance)
-   - Fetches 30 days of OHLCV data
-   - Supports multiple tickers
-
-3. **Task Generation** (`tasks/stock_task.py`): Create problem instances
-   - Generate haystack (stock price data with distractors)
-   - Generate needles (investor transactions)
-   - Compute answers (valid dates, optimal dates, final answer)
-   - Format problem text and chain-of-thought
-
-4. **Problem Composition** (`problem_composer.py`): Assemble complete problems
-   - Coordinate multiple investors
-   - Apply aggregation operations
-   - Format final output
-
-5. **Balanced Generation** (`generate_balanced_dataset.py`): Create dataset
-   - Generate samples for all parameter combinations
-   - Ensure balanced coverage
-   - Retry logic to minimize "None" answers
-   - Export to JSONL format
-
-### Generation Parameters
-
-The generation script accepts a single argument specifying the complexity level:
-
-```bash
-python generate_balanced_dataset.py <N>
-```
-
-Where `N` controls:
-- Number of investors: N
-- Breadth (companies): N
-- Depth (transactions): N (always even)
-- Number of distractors: N
-
-### Customization
-
-To customize generation parameters, edit `generate_balanced_dataset.py`:
-
-```python
-# Modify parameter ranges
-question_types = ['reverse_target_sell', 'reverse_target_buy']
-aggregations = ['earliest', 'latest']
-price_types = ['Open', 'Close']
-target_percentages = [round(0.1 + i * 0.15, 2) for i in range(13)]  # 10% to 200%
-
-# Adjust samples per combination
-samples_per_combination = 1  # Increase for more samples
-
-# Control retry behavior
-max_retries = 10  # Maximum retries if answer is None
-max_none_samples = 0  # Maximum None answers to keep
-```
-
-### Adding New Stock Tickers
-
-Edit `tasks/stock_task.py`:
-
-```python
-TICKER_LIST = ['AAPL', 'MSFT', 'GOOG', ...]  # Add your tickers
-COMPANY_LIST = ['Apple', 'Microsoft', 'Alphabet', ...]  # Add company names
-```
-
-## Evaluation
-
-### Evaluation Metrics
-
-The evaluation script computes two metrics:
-
-1. **Direct Answer Match**: Compares model's direct text answer with ground truth
-   - Handles multiple output formats (string, list, dict)
-   - Extracts investor names using context-aware parsing
-   - Penalizes false ties (e.g., "Alice and Bob" when only "Alice" is correct)
-
-2. **Code Execution Match**: Executes model-generated code and compares output
-   - Runs code in sandboxed environment
-   - Timeout protection (default 30s)
-   - Restricted imports for security
-   - Compares code output with ground truth
-
-### Model Output Format
-
-Your model outputs should be in JSONL format with the following structure:
+Model output files should be JSONL with one record per line:
 
 ```json
 {
-  "input": {
-    "problem": "Here is some data on the stock prices..."
-  },
-  "output": {
-    "answer": "Alice",
-    "code": "def solve():\n    # Your code here\n    return {'answer': ['Alice']}"
-  }
+  "input":  {"problem": "Here is some data on the smfr prices ..."},
+  "output": {"answer": "Alice", "code": "def solve(): ..."}
 }
 ```
 
-The `answer` field can be:
-- A string: `"Alice"` or `"Alice and Bob"`
-- A list: `["Alice", "Bob"]`
-- A dict: `{"answer": ["Alice"]}`
-- null or `"None"` for no valid answer
+The `code` field is optional. If present it must define a `solve()` function returning `{"answer": ...}`.
 
-The `code` field is optional. If provided, it must define a `solve()` function that returns a dict with an `"answer"` key.
+---
 
-### Answer Matching Logic
+## Running Experiments
 
-The evaluator uses investor-name-aware extraction:
+### CoT & CoT-SC (Single-Agent Baselines)
 
-| Model Output | Extracted | Matches `["Alice"]` |
-|--------------|-----------|---------------------|
-| `"Alice"` | `["Alice"]` | ✅ Yes |
-| `["Alice"]` | `["Alice"]` | ✅ Yes |
-| `"Alice and Bob"` | `["Alice", "Bob"]` | ❌ No (false tie) |
-| `"None"` | `None` | Only if GT is `[]` |
-| `[]` | `None` | Only if GT is `[]` |
+Each subdirectory under `evaluation/SAS/` is self-contained. `<data_dir>` should point to the folder containing the `.jsonl` benchmark files.
 
-### Safe Code Execution
+```bash
+export OPENAI_API_KEY="your-api-key"
+export MAX_CONCURRENT=50
 
-The `SafeCodeExecutor` provides sandboxed execution:
+# ── GPQA ──────────────────────────────────────────────────────────────────
+cd evaluation/SAS/GPQA
+pip install -r ../requirements.txt
 
-**Security Features:**
-- Timeout limits (configurable, default 30s)
-- Restricted imports (whitelist: `math`, `datetime`, `collections`, etc.)
-- No file system access
-- No network access
-- Isolated namespace
-- Restricted built-ins (`open`, `eval`, `exec` disabled)
+# CoT — run ID 1 (repeat with 2, 3 for 3 runs)
+python cot_gpqa.py <data_dir>/gpqa_test.jsonl gpqa_test gpt-4o gpqa_downsampled_gpt-4o "['Assistant']" 1
 
-**Allowed Imports:**
-```python
-# Math and utilities
-math, random, itertools, functools, operator, collections
+# CoT-SC — ensemble size 5
+python cot_sc_gpqa.py <data_dir>/gpqa_test.jsonl gpqa_test gpt-4o gpqa_downsampled_gpt-4o "['Assistant']" 1 5
 
-# Date/time
-datetime, calendar, time
+# ── HLE-Math ──────────────────────────────────────────────────────────────
+cd evaluation/SAS/HLEMATH
 
-# Data structures
-heapq, bisect, array, copy, enum
+python cot_hlemath.py <data_dir>/hlemath_test.jsonl hlemath_test gpt-4o hlemath_downsampled_gpt-4o "['Assistant']" 1
+python cot_sc_hlemath.py <data_dir>/hlemath_test.jsonl hlemath_test gpt-4o hlemath_downsampled_gpt-4o "['Assistant']" 1 5
 
-# String processing
-string, re, json
+# ── BrowseComp+ ───────────────────────────────────────────────────────────
+cd evaluation/SAS/BCP
+
+python cot_bcp.py <data_dir>/bcp_test.jsonl bcp_test gpt-4o bcp_downsampled_gpt-4o "['Assistant']" 1
+python cot_sc_bcp.py <data_dir>/bcp_test.jsonl bcp_test gpt-4o bcp_downsampled_gpt-4o "['Assistant']" 1 5
+
+# ── Smfrs ────────────────────────────────────────────────────────────────
+cd evaluation/SAS/SMFR
+
+# CODE_EVAL_MODE: 1 = require code output, 0 = direct answer only
+python cot_smfrs.py <data_dir>/smfr_test.jsonl smfr_test gpt-4o smfr_gpt-4o "['Assistant']" 1 1
+python cot_sc_smfr.py <data_dir>/smfr_test.jsonl smfr_test gpt-4o smfr_gpt-4o "['Assistant']" 1 1 5
+
+# ── SWE-Bench ─────────────────────────────────────────────────────────────
+cd evaluation/SAS/SWE
+
+# JUDGE_PATH enables Docker-based evaluation (optional)
+python cot_swe.py <data_dir>/swe_test.jsonl swe_test gpt-4o swe_downsampled_gpt-4o "['Assistant']" 1 <judge_path> princeton-nlp/SWE-bench_Lite
+python cot_sc_swe.py <data_dir>/swe_test.jsonl swe_test gpt-4o swe_downsampled_gpt-4o "['Assistant']" 1 <judge_path> princeton-nlp/SWE-bench_Lite 5
 ```
 
-**Disallowed Imports:**
-```python
-# System access
-os, sys, subprocess, socket
+Replace `gpt-4o` with `gpt-5` to switch models. The last numeric argument to `cot_sc_*.py` sets the ensemble size.
 
-# Network
-urllib, requests, http, ftplib
+---
 
-# File I/O
-pickle, shelve, dbm
+### Expert-Designed MAS (Smfrs)
 
-# Introspection
-inspect, dis, gc, pdb
+A manually designed 5-phase multi-agent pipeline (MetaAgent → ExtractAgent → CalculateAgent → ExtractAgent → Python aggregation) for the Smfrs benchmark.
+
+```bash
+cd evaluation/expert_MAS_for_smfr_dataset
+pip install -r requirements.txt
+
+export OPENAI_API_KEY="your-api-key"
+
+# Quick test (2 samples)
+python run_inference.py --input <data_dir>/smfr_test.jsonl --model gpt-4.1 --test
+
+# Full run — 10 parallel pipelines, 3 repetitions
+python run_inference.py \
+    --input <data_dir>/smfr_test.jsonl \
+    --model gpt-4.1 \
+    --concurrency 10 \
+    --reps 3
 ```
 
-### Evaluation Output
+Supported model aliases: `gpt-4o`, `gpt-4.1`, `o3`, `o4-mini`, `gpt-5`, `gemini-flash`, `gemini-pro`. For Gemini models also set `GOOGLE_CLOUD_PROJECT` and run `gcloud auth application-default login`.
 
-```
-============================================================
-EVALUATION RESULTS
-============================================================
-Total evaluated : 80
-Skipped         : 16  (not in reference / validation set)
+---
 
-Direct Answer:
-  Correct : 68/80 (85.0%)
-  Wrong   : 12/80 (15.0%)
+### Automatic MAS Frameworks
 
-Code Execution:
-  Correct          : 70/80 (87.5%)
-  Execution errors : 3/80 (3.8%)
-============================================================
-```
+Each framework has its own `README.md` with full details. Below are the essential commands to reproduce our experiments.
 
-## Prompt Engineering
+Place benchmark datasets (`.jsonl` files) in each framework's expected data directory before running. Refer to the individual READMEs for the exact path.
 
-### Recommended Response Schema
+#### ADAS
 
-Use structured outputs to minimize answer format variation:
+```bash
+cd evaluation/Automatic-MAS/ADAS
+pip install -r requirements.txt
+export OPENAI_API_KEY="your-api-key"
 
-```python
-from pydantic import BaseModel, Field
-
-class StockAnswer(BaseModel):
-    analysis: str = Field(..., description="Step-by-step reasoning")
-    answer: str = Field(..., description="Winning investor name(s), or 'None'")
-    code: str = Field(..., description="Python solve() function with all data embedded")
+bash run_gpqa.sh
+bash run_hle.sh
+bash run_bcp.sh
+bash run_smfr.sh
+bash run_swe.sh
 ```
 
-### Handling Ties
+#### AFlow
 
-Instruct models to return lists for ties:
+```bash
+cd evaluation/Automatic-MAS/AFlow
+pip install -r requirements.txt
 
-```
-If two or more investors tie for the earliest/latest date, return all tied 
-names as a Python list, e.g. ["Alice", "Bob"]. If no investor achieves the 
-target, return None.
-```
+# Set API key in config/config2.yaml
+# models: { "gpt-4o": { api_key: "your-api-key", ... } }
 
-### Code Generation Guidelines
-
-For models that generate code:
-
-```
-Generate a Python function named solve() that:
-1. Embeds all required data directly in the code (no external inputs)
-2. Returns a dictionary with at minimum {"answer": [...]}
-3. Uses only standard library imports (math, datetime, collections, etc.)
-4. Completes execution within 30 seconds
+bash run_gpqa.sh
+bash run_hlemath.sh
+bash run_bcp.sh
+bash run_smfr.sh
+bash run_swe.sh
 ```
 
-## Extensibility
+#### DyLAN
 
-The codebase is designed for extensibility:
+```bash
+cd evaluation/Automatic-MAS/DyLAN/code
+pip install -r requirements.txt
+export OPENAI_API_KEY="your-api-key"
 
-### Adding New Task Types
+# GPQA
+cd GPQA
+python llmlp_listwise_gpqa.py <data_dir>/gpqa_test.jsonl gpqa_test gpt-4o results "['Theoretical Physicist', 'Molecular Chemist', 'Cellular Biologist', 'Assistant']"
 
-1. Create a new task class in `src/tasks/`:
+# HLE-Math
+cd ../HLEMATH
+python llmlp_listwise_hlemath.py <data_dir>/hlemath_test.jsonl hlemath_test gpt-4o results "['Mathematician', 'AlgebraExpert', 'GeometryWizard', 'Assistant']"
 
-```python
-from task_base import BaseTask
+# BrowseComp+
+cd ../BCP
+python llmlp_listwise_bcp.py <data_dir>/bcp_test.jsonl bcp_test gpt-4o results "['Knowledge Researcher', 'Cultural Historian', 'Information Analyst', 'Assistant']"
 
-class MyTask(BaseTask):
-    def generate_haystack(self, seed):
-        # Generate distractor data
-        pass
-    
-    def generate_needles(self, haystack, seed, count):
-        # Generate problem instances
-        pass
-    
-    def compute_answer(self, needle):
-        # Compute ground truth answer
-        pass
-    
-    def format_problem(self, haystack, needles, template, extra_vars):
-        # Format problem text
-        pass
-    
-    def format_cot(self, needles, answers):
-        # Format chain-of-thought
-        pass
-    
-    def get_task_type(self):
-        return "my_task"
+# Smfrs
+cd ../SMFR
+bash exp_smfr_gpt4o.sh
+
+# SWE-Bench
+cd ../SWE
+bash exp_swe_gpt4o.sh
 ```
 
-2. Register in `problem_composer.py`:
+#### MaAS
 
-```python
-def _create_task(self, task_config):
-    if task_type == 'my_task':
-        return MyTask(config_dict)
+```bash
+cd evaluation/Automatic-MAS/MaAS
+pip install -e .
+
+# Configure ~/.metagpt/config2.yaml with your API key
+
+# Train (search)
+python -m examples.maas.optimize --dataset GPQA --round 1 --sample 4
+
+# Test
+python -m examples.maas.optimize --dataset GPQA --round 1 --sample 4 --is_test True
+
+# Smfrs (3-run evaluation)
+bash run_smfr_test_3x.sh
 ```
 
-3. Add configuration in `config_schema.py`:
+#### MAS-Orchestra
 
-```python
-def my_task_config(**kwargs) -> PipelineConfig:
-    # Define configuration
-    pass
+```bash
+cd evaluation/Automatic-MAS/MAS-Orchestra
+pip install -r requirements.txt
+export OPENAI_API_KEY="your-api-key"
+export TOGETHER_API_KEY="your-together-key"   # required for gpt-oss-120b
+
+# Step 1: deploy the orchestrator model
+bash vllm_deploy.sh
+
+# Step 2: generate MAS for each benchmark
+bash generate_mas.sh
+
+# Step 3: run evaluation
+bash run_gpt4o.sh    # gpt-4o sub-agents
+bash run_gpt5.sh     # gpt-5 sub-agents
+bash run_gptoss.sh   # gpt-oss-120b sub-agents
 ```
 
-### Adding New Data Sources
+#### MAS-Zero
 
-1. Create a data source class in `src/data_sources.py`:
+```bash
+cd evaluation/Automatic-MAS/MAS-Zero
+pip install -r requirements.txt
+export OPENAI_API_KEY="your-api-key"
 
-```python
-from task_base import BaseDataSource
+# Search — design MAS for GPQA
+python main_question.py \
+    --dataset workflow_search/gpqa_diamond \
+    --option plan \
+    --meta_model gpt-4o_chatgpt \
+    --node_model gpt-4o_chatgpt \
+    --verifier_model gpt-4o_chatgpt \
+    --blocks COT COT_SC Reflexion LLM_debate \
+    --n_generation 5
 
-class MyDataSource(BaseDataSource):
-    def fetch(self, params):
-        # Fetch data from external source
-        pass
-    
-    def serialize(self, data):
-        # Serialize for storage
-        pass
-    
-    def update(self, serialized_data):
-        # Update with latest values
-        pass
-    
-    def get_source_type(self):
-        return "my_source"
+# Verify — select best answer
+python main_judge.py \
+    --dataset gpqa_diamond \
+    --judge_method self \
+    --baseline workflow_search
 ```
 
-2. Register in the factory function:
-
-```python
-def create_data_source(source_type: str):
-    sources = {
-        'stock': StockDataSource,
-        'my_source': MyDataSource,
-    }
-    return sources[source_type]()
-```
-
+Refer to `evaluation/Automatic-MAS/MAS-Zero/README.md` for commands covering other benchmarks (HLE-Math, SWE-Bench).
