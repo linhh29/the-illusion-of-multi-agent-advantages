@@ -3,8 +3,8 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 
-export HF_HOME=/data/qin/wsd/.cache/huggingface
-export TMPDIR=/data/qin/wsd/tmp
+export HF_HOME=xx
+export TMPDIR=xx
 mkdir -p "$HF_HOME" "$TMPDIR"
 
 MODEL="gpt-4o"

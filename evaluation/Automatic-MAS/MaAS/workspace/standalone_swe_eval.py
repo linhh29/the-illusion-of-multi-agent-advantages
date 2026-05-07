@@ -521,7 +521,7 @@ def main():
     parser.add_argument(
         "--data_path", 
         type=str, 
-        default="/home/qin/wsd/MaAS/maas/ext/maas/data/swe_test.jsonl",
+        default="xx",
         help="Path to SWE-Bench dataset (.jsonl file)"
     )
     parser.add_argument(

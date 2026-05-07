@@ -12,7 +12,7 @@ from maas.ext.maas.benchmark.safe_code_executor import SafeCodeExecutor
 from maas.logs import logger
 
 # Verbatim copy of AFlow benchmarks/smfr.py `Instruction` (lines 12–37). Keep in sync with
-# /data/qin/lhh/MAS-Eval-Foundation/AFlow/benchmarks/smfr.py — do not edit unless upstream changes.
+#  — do not edit unless upstream changes.
 SMFR_AFLOW_INSTRUCTION = """
 First, solve the problem and explain your reasoning step-by-step. Provide your reasoning and final answer as `analysis` and `answer`. Then write code to solve this problem based on the following instructions.  
 To solve this problem, write Python code with a solve() function that returns a dictionary. When your code is executed, solve() should return, for example:{

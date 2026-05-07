@@ -6,7 +6,7 @@ export TMP="${TMP:-$TMPDIR}"
 export TEMP="${TEMP:-$TMPDIR}"
 mkdir -p "$TMPDIR"
 
-cd /home/qin/wsd/mas_eval/MaAS
+cd xx
 
 for i in 1 2 3; do
     echo "============================================"
