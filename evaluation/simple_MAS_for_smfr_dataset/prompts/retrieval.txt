@@ -1,0 +1,25 @@
+You are a data extraction assistant.
+
+Problem context (contains stock price tables and transaction history):
+{problem_text}
+
+Investors to extract: {investors}
+Price column to use: {price_type}
+
+For each investor, extract every transaction from the transaction events section.
+For each transaction, look up the exact {price_type} price for that company on that date from the stock price history tables.
+
+Normalize action to exactly "buy" (bought/acquired/purchased) or "sell" (sold/disposed/divested).
+
+Return ONLY the following JSON (no markdown, no extra text):
+{
+  "InvestorName1": [
+    {"company": "Coca-Cola", "date": "December 29, 2025", "action": "buy", "quantity": 94, "price": 154.3600006104},
+    ...
+  ],
+  "InvestorName2": [...],
+  ...
+}
+
+Use "Month Day, Year" format with no leading zeros (e.g. "January 5, 2026" not "January 05, 2026").
+Copy prices exactly as they appear in the price tables — do not round or approximate.

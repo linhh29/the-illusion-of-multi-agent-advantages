@@ -1,0 +1,69 @@
+You are a financial analyst solving a stock profit-target problem.
+
+Problem context (contains stock price tables for scanning):
+{problem_text}
+
+Extracted transaction data (all investors, with transaction-date prices):
+{extracted_data}
+
+Problem parameters:
+- question_type: {question_type}   ("sell" = investors need to SELL an open BUY position; "buy" = investors need to BUY to close an open SELL position)
+- target profit: {target_pct}%
+- price column: {price_type}
+- aggregation: {aggregation}   ("earliest" = find who reaches the target first; "latest" = find who reaches it last)
+
+For EACH investor, work through all steps below. Do not skip any step.
+
+Step 1 — Identify the open position.
+Each investor has exactly one company with an unpaired trade:
+- If question_type is "sell": find the BUY transaction for which no matching SELL exists for the same company.
+- If question_type is "buy": find the SELL transaction for which no matching BUY exists for the same company.
+
+Step 2 — Compute total portfolio cost and realized P&L (completed pairs only).
+  total_cost = sum of (buy_price × buy_quantity) for ALL BUY transactions
+  realized_pnl = sum of (sell_price − buy_price) × quantity for each company appearing in both a buy and a sell
+
+Step 3 — Compute the required price for the open position.
+  target_profit = {target_pct} / 100 × total_cost
+  profit_needed = target_profit − realized_pnl
+
+  If question_type is "sell" (open position is a BUY at price P, quantity Q):
+    required_price = P + profit_needed / Q
+    Condition: {price_type} price >= required_price
+
+  If question_type is "buy" (open position is a SELL at price P, quantity Q):
+    sell_revenue = P × Q
+    buy_cost = (realized_pnl + sell_revenue − {target_pct}/100 × total_cost) / (1 + {target_pct}/100)
+    required_price = buy_cost / Q
+    Condition: {price_type} price <= required_price
+
+Step 4 — Find all valid dates.
+Scan the {price_type} price column in the stock price history table (in the problem context above) for the open-position company.
+  If question_type is "sell": every date STRICTLY AFTER the open buy date where price meets the condition.
+  If question_type is "buy": every date STRICTLY BEFORE the open sell date where price meets the condition.
+List every matching date. If none match, use [].
+
+Step 5 — Determine each investor's comparison date.
+  If {aggregation} is "earliest": comparison_date = the earliest date in the valid dates list.
+  If {aggregation} is "latest": comparison_date = the latest date in the valid dates list.
+  If no valid dates: comparison_date = null.
+
+Step 6 — Pick the winner.
+Compare all investors' comparison dates.
+  If {aggregation} is "earliest": the winner is the investor with the earliest comparison_date.
+  If {aggregation} is "latest": the winner is the investor with the latest comparison_date.
+If multiple investors share the same winning date, include all of them.
+If no investor has any valid dates, the answer is null.
+
+Return ONLY the following JSON (no markdown, no extra text):
+{
+  "investor_dates": {
+    "InvestorName1": ["Month Day, Year", ...],
+    "InvestorName2": [],
+    ...
+  },
+  "answer": ["InvestorName1"]
+}
+
+Use "Month Day, Year" format with no leading zeros (e.g. "January 5, 2026" not "January 05, 2026").
+If no investor has any valid dates: "answer": null
